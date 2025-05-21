@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import AppKit
 import UniformTypeIdentifiers
 
 import SwiftUI
@@ -17,6 +18,7 @@ struct ContentView: View {
     @State private var destinationURL: URL?
     @State private var extractionStatus: String = ""
     @State private var isExtracting: Bool = false
+    @State private var showingAbout: Bool = false
 
     var body: some View {
         VStack(spacing: 20) {
@@ -96,12 +98,21 @@ struct ContentView: View {
             // 開始解壓按鈕
             Button(action: {
                 guard let archiveURL = archiveURL else { return }
-                if archiveURL.pathExtension.lowercased() == "rar" {
-                    isExtracting = true
-                    extractionStatus = "正在解壓..."
+                let ext = archiveURL.pathExtension.lowercased()
+                isExtracting = true
+                extractionStatus = "正在解壓..."
+
+                if ext == "rar" {
                     extractRAR()
+                } else if ext == "7z" || ext == "zip" {
+                    extract7zOrZIP()
+                } else if ext == "tar.gz" || ext == "tgz" || archiveURL.lastPathComponent.lowercased().hasSuffix(".tar.gz") {
+                    extractTAR()
+                } else if ext == "tar.bz2" || ext == "tbz" || archiveURL.lastPathComponent.lowercased().hasSuffix(".tar.bz2") {
+                    extractTARBZ2()
                 } else {
-                    extractionStatus = "目前僅支援 RAR 檔案解壓（ZIP / 7z 尚未實作）"
+                    extractionStatus = "目前僅支援 RAR / 7z / ZIP / TAR.GZ / TGZ / TAR.BZ2 / TBZ 檔案解壓"
+                    isExtracting = false
                 }
             }) {
                 Text("開始解壓")
@@ -126,6 +137,11 @@ struct ContentView: View {
             }
 
             Spacer()
+
+            // 關於我按鈕
+            Button("關於我") {
+                showingAbout = true
+            }
         }
         .padding()
         .frame(minWidth: 500, minHeight: 400)
@@ -154,6 +170,90 @@ struct ContentView: View {
             default: return nil
             }
         }())
+        .sheet(isPresented: $showingAbout) {
+            VStack(spacing: 20) {
+                Text("關於 NekoRAR")
+                    .font(.title)
+                    .bold()
+                Text("NekoRAR 是一款簡易的解壓縮工具，支援 RAR / ZIP / 7z / TAR.GZ / TAR.BZ2 等格式。")
+                    .multilineTextAlignment(.center)
+                Text("作者：千葉牧人")
+                    .font(.footnote)
+                    .foregroundColor(.secondary)
+                Button("關閉") {
+                    showingAbout = false
+                }
+                .padding(.top)
+            }
+            .padding(40)
+            .frame(minWidth: 300)
+        }
+    }
+
+    private func extract7zOrZIP() {
+        guard let archiveURL = archiveURL else {
+            extractionStatus = "請選擇檔案"
+            isExtracting = false
+            return
+        }
+        guard let destinationURL = destinationURL else {
+            extractionStatus = "請選擇目的地"
+            isExtracting = false
+            return
+        }
+
+        defer {
+            destinationURL.stopAccessingSecurityScopedResource()
+        }
+
+        guard let bundle7zPath = Bundle.main.resourceURL?.appendingPathComponent("7za") else {
+            extractionStatus = "找不到內建的 7za 執行檔"
+            isExtracting = false
+            return
+        }
+
+        guard FileManager.default.fileExists(atPath: bundle7zPath.path) else {
+            extractionStatus = "❌ 未找到 bundle 中的 7za，可檢查 Build Phase 設定"
+            isExtracting = false
+            return
+        }
+
+        try? FileManager.default.createDirectory(at: destinationURL, withIntermediateDirectories: true, attributes: nil)
+
+        let process = Process()
+        process.executableURL = bundle7zPath
+
+        let passwordArg = password.isEmpty ? nil : "-p\(password)"
+        var arguments = ["x", "-y", archiveURL.path, "-o\(destinationURL.path)"]
+        if let pwd = passwordArg {
+            arguments.insert(pwd, at: 2)
+        }
+        process.arguments = arguments
+
+        let pipe = Pipe()
+        process.standardOutput = pipe
+        process.standardError = pipe
+
+        do {
+            try process.run()
+            process.waitUntilExit()
+
+            let data = pipe.fileHandleForReading.readDataToEndOfFile()
+            let output = String(decoding: data, as: UTF8.self)
+            print("🧃 7z/ZIP 解壓輸出：\n\(output)")
+            print("🧃 程式退出碼：\(process.terminationStatus)")
+
+            if process.terminationStatus == 0 {
+                extractionStatus = "7z/ZIP 解壓完成 ✅"
+                NSWorkspace.shared.open(destinationURL)
+            } else {
+                extractionStatus = "7z/ZIP 解壓失敗 ❌\n\(output)"
+            }
+        } catch {
+            extractionStatus = "執行 7z/ZIP 解壓時發生錯誤：\(error.localizedDescription)"
+        }
+
+        isExtracting = false
     }
 
     // 目的地選擇對話框
@@ -231,6 +331,7 @@ struct ContentView: View {
 
             if process.terminationStatus == 0 {
                 extractionStatus = "解壓完成 ✅"
+                NSWorkspace.shared.open(destinationURL)
                 isExtracting = false
             } else {
                 extractionStatus = "解壓失敗 ❌\n\(output)"
@@ -240,5 +341,119 @@ struct ContentView: View {
             extractionStatus = "執行解壓時發生錯誤：\(error.localizedDescription)"
             isExtracting = false
         }
+    }
+    
+    private func extractTAR() {
+        guard let archiveURL = archiveURL else {
+            extractionStatus = "請選擇檔案"
+            isExtracting = false
+            return
+        }
+        guard let destinationURL = destinationURL else {
+            extractionStatus = "請選擇目的地"
+            isExtracting = false
+            return
+        }
+        
+        defer {
+            destinationURL.stopAccessingSecurityScopedResource()
+        }
+        
+        let tarPath = "/usr/bin/tar"
+        guard FileManager.default.fileExists(atPath: tarPath) else {
+            extractionStatus = "找不到系統內建的 tar 指令"
+            isExtracting = false
+            return
+        }
+        
+        try? FileManager.default.createDirectory(at: destinationURL, withIntermediateDirectories: true, attributes: nil)
+        
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: tarPath)
+        
+        // tar -xzf archive -C destination
+        process.arguments = ["-xzf", archiveURL.path, "-C", destinationURL.path]
+        
+        let pipe = Pipe()
+        process.standardOutput = pipe
+        process.standardError = pipe
+        
+        do {
+            try process.run()
+            process.waitUntilExit()
+            
+            let data = pipe.fileHandleForReading.readDataToEndOfFile()
+            let output = String(decoding: data, as: UTF8.self)
+            print("📦 tar 解壓輸出：\n\(output)")
+            print("📦 程式退出碼：\(process.terminationStatus)")
+            
+            if process.terminationStatus == 0 {
+                extractionStatus = "tar 解壓完成 ✅"
+                NSWorkspace.shared.open(destinationURL)
+            } else {
+                extractionStatus = "tar 解壓失敗 ❌\n\(output)"
+            }
+        } catch {
+            extractionStatus = "執行 tar 解壓時發生錯誤：\(error.localizedDescription)"
+        }
+        
+        isExtracting = false
+    }
+    
+    private func extractTARBZ2() {
+        guard let archiveURL = archiveURL else {
+            extractionStatus = "請選擇檔案"
+            isExtracting = false
+            return
+        }
+        guard let destinationURL = destinationURL else {
+            extractionStatus = "請選擇目的地"
+            isExtracting = false
+            return
+        }
+        
+        defer {
+            destinationURL.stopAccessingSecurityScopedResource()
+        }
+        
+        let tarPath = "/usr/bin/tar"
+        guard FileManager.default.fileExists(atPath: tarPath) else {
+            extractionStatus = "找不到系統內建的 tar 指令"
+            isExtracting = false
+            return
+        }
+        
+        try? FileManager.default.createDirectory(at: destinationURL, withIntermediateDirectories: true, attributes: nil)
+        
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: tarPath)
+        
+        // tar -xjf archive -C destination
+        process.arguments = ["-xjf", archiveURL.path, "-C", destinationURL.path]
+        
+        let pipe = Pipe()
+        process.standardOutput = pipe
+        process.standardError = pipe
+        
+        do {
+            try process.run()
+            process.waitUntilExit()
+            
+            let data = pipe.fileHandleForReading.readDataToEndOfFile()
+            let output = String(decoding: data, as: UTF8.self)
+            print("📦 tar.bz2 解壓輸出：\n\(output)")
+            print("📦 程式退出碼：\(process.terminationStatus)")
+            
+            if process.terminationStatus == 0 {
+                extractionStatus = "tar.bz2 解壓完成 ✅"
+                NSWorkspace.shared.open(destinationURL)
+            } else {
+                extractionStatus = "tar.bz2 解壓失敗 ❌\n\(output)"
+            }
+        } catch {
+            extractionStatus = "執行 tar.bz2 解壓時發生錯誤：\(error.localizedDescription)"
+        }
+        
+        isExtracting = false
     }
 }
