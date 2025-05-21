@@ -1,0 +1,34 @@
+echo '
+# macOS
+.DS_Store
+
+# Xcode
+*.xcuserstate
+*.xcworkspace
+DerivedData/
+build/
+*.xcuserdatad
+
+# SwiftPM
+.swiftpm/
+.build/
+
+# Fastlane
+fastlane/report.xml
+fastlane/screenshots
+fastlane/test_output
+
+# Cocoapods
+Pods/
+
+# Carthage
+Carthage/
+
+# Archives
+*.xcarchive
+
+# Personal
+*.idea/
+*.swp
+' > .gitignore
+
