@@ -1,0 +1,24 @@
+/*
+  Localizable.strings
+  NekoRAR
+
+  Created by 千葉牧人 on 2025/5/21.
+  
+*/
+title_main = "🐱 NekoRAR Extractor";
+drop_zone_hint = "Drag ZIP / RAR / 7z files here";
+password_label = "Password:";
+password_placeholder = "Leave blank if not required";
+destination_label = "Destination:";
+start_extract = "Start Extraction";
+about = "About";
+about_title = "About NekoRAR";
+about_description = "NekoRAR is a simple extraction tool supporting RAR / ZIP / 7z / TAR.GZ / TAR.BZ2 formats.";
+about_author = "Author: Maki Chiba";
+close = "Close";
+appearance = "Appearance";
+appearance_system = "System";
+appearance_light = "Light";
+appearance_dark = "Dark";
+choose_folder = "Choose Folder";
+status_rar_corrupt_or_missing = "❌ Extraction failed: archive is corrupted or incomplete.\nPlease verify all .part files are present or re-download the archive.";

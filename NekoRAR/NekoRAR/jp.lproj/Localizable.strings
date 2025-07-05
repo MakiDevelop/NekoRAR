@@ -1,0 +1,24 @@
+/*
+  Localizable.strings
+  NekoRAR
+
+  Created by 千葉牧人 on 2025/5/21.
+  
+*/
+title_main = "🐱 NekoRAR 解凍ツール";
+drop_zone_hint = "ZIP / RAR / 7z ファイルをここにドラッグ";
+password_label = "パスワード：";
+password_placeholder = "パスワードがない場合は空欄のまま";
+destination_label = "保存先：";
+start_extract = "解凍開始";
+about = "このアプリについて";
+about_title = "このアプリについて";
+about_description = "NekoRAR は RAR / ZIP / 7z / TAR.GZ / TAR.BZ2 形式をサポートする簡単な解凍ツールです。";
+about_author = "作者：千葉牧人";
+close = "閉じる";
+appearance = "外観";
+appearance_system = "システム";
+appearance_light = "ライト";
+appearance_dark = "ダーク";
+choose_folder = "フォルダを選択";
+status_rar_corrupt_or_missing = "❌ 解凍に失敗しました：ファイルが破損または不足しています。\nすべての .part ファイルが揃っているか確認するか、再度ダウンロードしてください。";

@@ -9,6 +9,13 @@ import SwiftUI
 
 @main
 struct NekoRARApp: App {
+    init() {
+        if CommandLine.arguments.count > 1 {
+            let path = CommandLine.arguments[1]
+            UserDefaults.standard.set(path, forKey: "launchFilePath")
+        }
+    }
+    
     var body: some Scene {
         WindowGroup {
             ContentView()

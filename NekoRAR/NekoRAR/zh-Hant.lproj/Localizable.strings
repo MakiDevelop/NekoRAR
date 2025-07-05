@@ -1,0 +1,24 @@
+/*
+  Localizable.strings
+  NekoRAR
+
+  Created by 千葉牧人 on 2025/5/21.
+  
+*/
+title_main = "🐱 NekoRAR 解壓工具";
+drop_zone_hint = "拖曳 ZIP / RAR / 7z 檔案到這裡";
+password_label = "密碼：";
+password_placeholder = "如無密碼可留空";
+destination_label = "選擇資料夾";
+start_extract = "開始解壓";
+about = "關於我";
+about_title = "關於 NekoRAR";
+about_description = "NekoRAR 是一款簡易的解壓縮工具，支援 RAR / ZIP / 7z / TAR.GZ / TAR.BZ2 等格式。";
+about_author = "作者：千葉牧人";
+close = "關閉";
+appearance = "外觀";
+appearance_system = "系統";
+appearance_light = "淺色";
+appearance_dark = "深色";
+choose_folder = "選擇資料夾";
+status_rar_corrupt_or_missing = "❌ 解壓失敗：檔案損毀或缺失。\n請確認所有 .part 檔案是否完整，或重新下載壓縮包。";
